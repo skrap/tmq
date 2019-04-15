@@ -77,7 +77,7 @@ impl<P: Poller, M: Into<zmq::Message>> Sink for Pub<M, P> {
         debug!("Poll complete hit!");
 
         if let Some(msg) = self.current.take() {
-            match self.socket.send_message(&msg)? {
+            match self.socket.send_message(&msg, false)? {
                 Async::NotReady => {
                     //Plop it back into our queue
                     self.current = Some(msg);

@@ -8,17 +8,19 @@ use tokio::reactor::PollEvented2;
 use zmq;
 
 pub trait Poller {
-    fn send_message(&self, msg: &zmq::Message) -> Poll<(), Error>;
+    fn send_message(&self, msg: &zmq::Message, has_more: bool) -> Poll<(), Error>;
 
     fn recv_message(&self, msg: &mut zmq::Message) -> Poll<(), Error>;
+    fn get_rcvmore(&self) -> Result<bool,Error>;
 }
 
 impl Poller for PollEvented2<MioSocket> {
-    fn send_message(&self, msg: &zmq::Message) -> Poll<(), Error> {
+    fn send_message(&self, msg: &zmq::Message, has_more: bool) -> Poll<(), Error> {
         match self.poll_write_ready()? {
             Async::Ready(_) => {
                 //Send the message, and if it will block, then we set up a notifier
-                if let Err(e) = self.get_ref().io.send(&**msg, zmq::DONTWAIT) {
+                let flags = zmq::DONTWAIT | if has_more { zmq::SNDMORE } else { 0 };
+                if let Err(e) = self.get_ref().io.send(&**msg, flags) {
                     if e == zmq::Error::EAGAIN {
                         self.clear_write_ready()?;
                         return Ok(Async::NotReady);
@@ -56,5 +58,9 @@ impl Poller for PollEvented2<MioSocket> {
                 return Ok(Async::NotReady);
             }
         }
+    }
+
+    fn get_rcvmore(&self) -> Result<bool,Error> {
+        self.get_ref().io.get_rcvmore().map_err(failure::Error::from)
     }
 }

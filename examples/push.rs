@@ -38,15 +38,14 @@ fn main() {
 }
 
 //Set up a timer to transmit every second.
-fn make_msgs() -> impl Stream<Item = Message, Error = Error> {
+fn make_msgs() -> impl Stream<Item = Vec<Message>, Error = Error> {
     let mut i = 0;
 
     Interval::new_interval(Duration::from_millis(1000))
         .map(move |_| {
             i += 1;
-            let message = format!("Push #{}", i);
-            info!("Push: {}", message);
-            Message::from(&message)
+            info!("Push: #{}", i);
+            vec![Message::from("Push"), Message::from(&format!("#{}", i))]
         })
         .from_err()
 }

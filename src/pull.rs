@@ -1,3 +1,5 @@
+use crate::Multipart;
+
 use futures::{Async, Poll, Stream};
 
 use tokio::reactor::PollEvented2;
@@ -45,30 +47,40 @@ impl PullBuilderBounded {
     pub fn finish(self) -> Pull<PollEvented2<MioSocket>> {
         Pull {
             socket: PollEvented2::new(self.socket),
-            buffer: None,
+            buffer: zmq::Message::new(),
+            messages: Multipart::new(),
         }
     }
 }
 
 pub struct Pull<P: Poller> {
     socket: P,
-    buffer: Option<zmq::Message>,
+    buffer: zmq::Message,
+    messages: Multipart,
 }
 
 impl<P: Poller> Stream for Pull<P> {
-    type Item = zmq::Message;
+    type Item = Multipart;
     type Error = Error;
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         debug!("Poll Hit!");
 
-        let mut buffer = self.buffer.take().unwrap_or_else(|| zmq::Message::new());
-
-        match self.socket.recv_message(&mut buffer)? {
-            Async::Ready(()) => return Ok(Async::Ready(Some(buffer))),
-            Async::NotReady => {
-                self.buffer = Some(buffer);
-                return Ok(Async::NotReady);
+        loop {
+            match self.socket.recv_message(&mut self.buffer)? {
+                Async::Ready(()) => {
+                    self.messages.push(std::mem::replace(&mut self.buffer, zmq::Message::new()));
+                    match self.socket.get_rcvmore() {
+                        Ok(true) => (), // there's more to get, so let loop {} run again.
+                        Ok(false) => {
+                            break Ok(Async::Ready(Some(std::mem::replace(&mut self.messages, Multipart::new()))))
+                        }
+                        Err(e) => break Err(e)
+                    }
+                }
+                Async::NotReady => {
+                    break Ok(Async::NotReady);
+                }
             }
         }
     }

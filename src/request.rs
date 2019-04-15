@@ -109,7 +109,7 @@ impl<M: Into<zmq::Message>, S: Stream<Item = M, Error = Error>, P: Poller> Strea
                     }
                 }
             }
-            State::Sending(msg) => match self.socket.send_message(&msg)? {
+            State::Sending(msg) => match self.socket.send_message(&msg, false)? {
                 Async::Ready(_) => {
                     task::current().notify();
                     self.state = State::Receiving(zmq::Message::new());

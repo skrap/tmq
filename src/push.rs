@@ -10,6 +10,7 @@ use zmq::{self, Context, SocketType};
 
 use poll::Poller;
 use socket::MioSocket;
+use crate::Multipart;
 
 pub fn push(context: &Context) -> PushBuilder {
     PushBuilder { context }
@@ -44,7 +45,7 @@ impl<'a> PushBuilder<'a> {
 }
 
 impl PushBuilderBounded {
-    pub fn finish<M: Into<zmq::Message>>(self) -> Push<M, PollEvented2<MioSocket>> {
+    pub fn finish(self) -> Push<PollEvented2<MioSocket>> {
         Push {
             socket: PollEvented2::new(self.socket),
             buffer: VecDeque::new(),
@@ -53,21 +54,28 @@ impl PushBuilderBounded {
     }
 }
 
-pub struct Push<M: Into<zmq::Message>, P: Poller> {
+pub struct Push<P: Poller> {
     socket: P,
-    buffer: VecDeque<M>,
-    current: Option<zmq::Message>,
+    buffer: VecDeque<MultipartSegment>,
+    current: Option<MultipartSegment>,
 }
 
-impl<P: Poller, M: Into<zmq::Message>> Sink for Push<M, P> {
-    type SinkItem = M;
+struct MultipartSegment {
+    msg: zmq::Message,
+    has_more: bool
+}
+
+impl<'a, P: Poller> Sink for Push<P> {
+    type SinkItem = Multipart;
     type SinkError = Error;
 
-    fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
+    fn start_send(&mut self, parts: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
+        let part_count = parts.len();
+        for (i,msgpart) in parts.into_iter().enumerate() {
+            self.buffer.push_back(MultipartSegment { msg: msgpart.into(), has_more: i + 1 < part_count} )
+        }
         if self.current.is_none() {
-            self.current = Some(item.into());
-        } else {
-            self.buffer.push_back(item);
+            self.current = self.buffer.pop_front();
         }
 
         Ok(AsyncSink::Ready)
@@ -77,18 +85,21 @@ impl<P: Poller, M: Into<zmq::Message>> Sink for Push<M, P> {
         debug!("Poll complete hit!");
 
         if let Some(msg) = self.current.take() {
-            match self.socket.send_message(&msg)? {
+            match self.socket.send_message(&msg.msg, msg.has_more)? {
                 Async::NotReady => {
                     //Plop it back into our queue
                     self.current = Some(msg);
                     return Ok(Async::NotReady);
                 }
                 Async::Ready(()) => {
-                    if let Some(new_msg) = self.buffer.pop_front().map(|val| val.into()) {
+                    if let Some(segment) = self
+                        .buffer
+                        .pop_front()
+                    {
                         //Message was sent, add a notify to be polled once more to check whether there are any messages.
                         task::current().notify();
 
-                        self.current = Some(new_msg);
+                        self.current = Some(segment);
                         return Ok(Async::NotReady);
                     }
                 }

@@ -25,8 +25,8 @@ fn main() {
         .bind("tcp://127.0.0.1:7899")
         .expect("Couldn't bind")
         .finish()
-        .for_each(|val| {
-            info!("Pull: {}", val.as_str().unwrap_or(""));
+        .for_each(|parts| {
+            info!("Pull: {}", parts.iter().map(|m| m.as_str().unwrap_or("")).join(" "));
             Ok(())
         })
         .map_err(|e| {

@@ -28,3 +28,5 @@ pub use socket::MioSocket;
 pub use subscribe::{subscribe, Sub};
 
 pub use zmq::{Context, Message, Result, Socket, SocketType};
+
+pub type Multipart = Vec<Message>;

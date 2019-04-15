@@ -127,7 +127,7 @@ impl<R: Responder<Output = F>, F: Future<Item = zmq::Message, Error = Error>> Fu
                     self.state = State::RunningFuture(f);
                 }
             },
-            State::Sending(msg) => match self.socket.send_message(&msg)? {
+            State::Sending(msg) => match self.socket.send_message(&msg, false)? {
                 Async::Ready(_) => {
                     task::current().notify();
                     self.state = State::Receiving(zmq::Message::new());
