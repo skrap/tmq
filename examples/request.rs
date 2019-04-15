@@ -17,7 +17,7 @@ use tmq::*;
 use std::env;
 
 fn main() {
-    if let Err(_) = env::var("RUST_LOG") {
+    if env::var("RUST_LOG").is_err() {
         env::set_var("RUST_LOG", "request=DEBUG");
     }
 

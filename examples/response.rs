@@ -16,7 +16,7 @@ use tmq::*;
 use std::env;
 
 fn main() {
-    if let Err(_) = env::var("RUST_LOG") {
+    if env::var("RUST_LOG").is_err() {
         env::set_var("RUST_LOG", "response=DEBUG");
     }
 
@@ -43,11 +43,11 @@ impl Responder for EchoResponder {
     type Output = FutureResult<Message, Error>;
 
     fn respond(&mut self, msg: Message) -> Self::Output {
-        return Ok(msg).into();
+        Ok(msg).into()
     }
 }
 
 //Or you can use a free-floating function
 fn echo(msg: Message) -> impl Future<Item = Message, Error = Error> {
-    return ok(msg);
+    ok(msg)
 }

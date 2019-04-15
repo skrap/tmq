@@ -95,6 +95,6 @@ impl<P: Poller, M: Into<zmq::Message>> Sink for Push<M, P> {
             }
         }
 
-        return Ok(Async::Ready(()));
+        Ok(Async::Ready(()))
     }
 }
