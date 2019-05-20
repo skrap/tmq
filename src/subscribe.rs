@@ -42,13 +42,16 @@ impl<'a> SubBuilder<'a> {
 }
 
 impl SubBuilderBounded {
-    pub fn subscribe<'a, R: AsRef<[u8]>>(self, topic: R) -> Sub<PollEvented2<MioSocket>> {
+    pub fn subscribe<'a, R: AsRef<[u8]>>(self, topic: R) -> SubBuilderBounded {
         //Will only fail for non-rusty reasons: http://api.zeromq.org/2-1:zmq-setsockopt#toc20
         self.socket
             .io
             .set_subscribe(topic.as_ref())
             .expect("Couldn't set Subscribe");
+        self
+    }
 
+    pub fn finish(self) -> Sub<PollEvented2<MioSocket>> {
         Sub {
             socket: PollEvented2::new(self.socket),
             buffer: None,

@@ -25,6 +25,7 @@ fn main() {
         .connect("tcp://127.0.0.1:7899")
         .expect("Couldn't connect")
         .subscribe("")
+        .finish()
         .for_each(|val| {
             info!("Subscribe: {}", val.as_str().unwrap_or(""));
             Ok(())
