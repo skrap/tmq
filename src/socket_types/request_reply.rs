@@ -1,15 +1,19 @@
-use crate::{poll::ZmqPoller, Multipart};
+use crate::{poll::ZmqPoller, Multipart, SocketBuilder};
 use zmq::{self, Context as ZmqContext};
 
-/// Create a builder for a Request socket
-pub fn request(context: &ZmqContext) -> RequestBuilder {
-    RequestBuilder::new(context)
+/// Create a builder for a REQ socket
+pub fn request(context: &ZmqContext) -> SocketBuilder<RequestBuilderBound> {
+    SocketBuilder::new(context, zmq::SocketType::REQ)
 }
-
-impl_builder!(REQ, RequestBuilder, RequestBuilderBound);
 
 pub struct RequestBuilderBound {
     socket: zmq::Socket,
+}
+
+impl std::convert::From<zmq::Socket> for RequestBuilderBound {
+    fn from(socket: zmq::Socket) -> Self {
+        Self { socket }
+    }
 }
 
 impl RequestBuilderBound {
@@ -40,14 +44,19 @@ impl RequestSender {
     }
 }
 
-pub fn reply(context: &ZmqContext) -> ReplyBuilder {
-    ReplyBuilder::new(context)
+/// Create a builder for a REP socket
+pub fn reply(context: &ZmqContext) -> SocketBuilder<ReplyBuilderBound> {
+    SocketBuilder::new(context, zmq::SocketType::REP)
 }
-
-impl_builder!(REP, ReplyBuilder, ReplyBuilderBound);
 
 pub struct ReplyBuilderBound {
     socket: zmq::Socket,
+}
+
+impl std::convert::From<zmq::Socket> for ReplyBuilderBound {
+    fn from(socket: zmq::Socket) -> Self {
+        Self { socket }
+    }
 }
 
 impl ReplyBuilderBound {

@@ -1,16 +1,20 @@
 use zmq::{self, Context as ZmqContext};
 
-use crate::{poll::ZmqPoller, Sender};
+use crate::{poll::ZmqPoller, Sender, SocketBuilder};
 
 /// Create a builder for a PUB socket.
-pub fn publish(context: &ZmqContext) -> PublishBuilder {
-    PublishBuilder::new(context)
+pub fn publish(context: &ZmqContext) -> SocketBuilder<PublishBuilderBound> {
+    SocketBuilder::new(context, zmq::SocketType::PUB)
 }
-
-impl_builder!(PUB, PublishBuilder, PublishBuilderBound);
 
 pub struct PublishBuilderBound {
     socket: zmq::Socket,
+}
+
+impl std::convert::From<zmq::Socket> for PublishBuilderBound {
+    fn from(socket: zmq::Socket) -> Self {
+        Self { socket }
+    }
 }
 
 impl PublishBuilderBound {

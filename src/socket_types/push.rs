@@ -1,16 +1,20 @@
 use zmq::{self, Context as ZmqContext};
 
-use crate::{comm::Sender, poll::ZmqPoller};
+use crate::{comm::Sender, poll::ZmqPoller, SocketBuilder};
 
 /// Create a builder for a PUSH socket.
-pub fn push(context: &ZmqContext) -> PushBuilder {
-    PushBuilder::new(context)
+pub fn push(context: &ZmqContext) -> SocketBuilder<PushBuilderBound> {
+    SocketBuilder::new(context, zmq::SocketType::PUSH)
 }
-
-impl_builder!(PUSH, PushBuilder, PushBuilderBound);
 
 pub struct PushBuilderBound {
     socket: zmq::Socket,
+}
+
+impl std::convert::From<zmq::Socket> for PushBuilderBound {
+    fn from(socket: zmq::Socket) -> Self {
+        Self { socket }
+    }
 }
 
 impl PushBuilderBound {

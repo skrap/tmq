@@ -202,38 +202,3 @@ macro_rules! impl_buffered_stream {
         }
     };
 }
-
-/// Builder implementations
-
-/// Creates a builder structure named $builder with methods to bind and connect using the given $socket_type.
-/// The $result_type must have a constructor accepting a single field called `socket` of type [`zmq::Socket`].
-macro_rules! impl_builder {
-    ($socket_type: ident, $builder: ident, $result_type: tt) => {
-        pub struct $builder<'a> {
-            context: &'a ::zmq::Context,
-        }
-
-        impl<'a> $builder<'a> {
-            fn new(context: &'a ::zmq::Context) -> Self {
-                Self { context }
-            }
-
-            pub fn connect(self, endpoint: &str) -> $crate::Result<$result_type> {
-                let socket = self.context.socket(::zmq::SocketType::$socket_type)?;
-                socket.connect(endpoint)?;
-
-                $crate::Result::Ok($result_type {
-                    socket: socket.into(),
-                })
-            }
-            pub fn bind(self, endpoint: &str) -> $crate::Result<$result_type> {
-                let socket = self.context.socket(::zmq::SocketType::$socket_type)?;
-                socket.bind(endpoint)?;
-
-                $crate::Result::Ok($result_type {
-                    socket: socket.into(),
-                })
-            }
-        }
-    };
-}

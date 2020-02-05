@@ -1,16 +1,20 @@
 use zmq::{self, Context as ZmqContext};
 
-use crate::{comm::SenderReceiver, poll::ZmqPoller};
+use crate::{comm::SenderReceiver, poll::ZmqPoller, SocketBuilder};
 
 /// Create a builder for a DEALER socket.
-pub fn dealer(context: &ZmqContext) -> DealerBuilder {
-    DealerBuilder::new(context)
+pub fn dealer(context: &ZmqContext) -> SocketBuilder<DealerBuilderBound> {
+    SocketBuilder::new(context, zmq::SocketType::DEALER)
 }
-
-impl_builder!(DEALER, DealerBuilder, DealerBuilderBound);
 
 pub struct DealerBuilderBound {
     socket: zmq::Socket,
+}
+
+impl std::convert::From<zmq::Socket> for DealerBuilderBound {
+    fn from(socket: zmq::Socket) -> Self {
+        Self { socket }
+    }
 }
 
 impl DealerBuilderBound {

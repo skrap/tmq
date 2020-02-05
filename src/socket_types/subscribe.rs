@@ -1,16 +1,20 @@
 use zmq::{self, Context as ZmqContext};
 
-use crate::{poll::ZmqPoller, socket::AsZmqSocket, Receiver};
+use crate::{poll::ZmqPoller, socket::AsZmqSocket, Receiver, SocketBuilder};
 
 /// Create a builder for a SUB socket.
-pub fn subscribe(context: &ZmqContext) -> SubscribeBuilder {
-    SubscribeBuilder::new(context)
+pub fn subscribe(context: &ZmqContext) -> SocketBuilder<SubscribeBuilderBound> {
+    SocketBuilder::new(context, zmq::SocketType::SUB)
 }
-
-impl_builder!(SUB, SubscribeBuilder, SubscribeBuilderBound);
 
 pub struct SubscribeBuilderBound {
     socket: zmq::Socket,
+}
+
+impl std::convert::From<zmq::Socket> for SubscribeBuilderBound {
+    fn from(socket: zmq::Socket) -> Self {
+        Self { socket }
+    }
 }
 
 impl SubscribeBuilderBound {

@@ -1,16 +1,20 @@
 use zmq::{self, Context as ZmqContext};
 
-use crate::{comm::SenderReceiver, poll::ZmqPoller, socket::AsZmqSocket, Result};
+use crate::{comm::SenderReceiver, poll::ZmqPoller, socket::AsZmqSocket, Result, SocketBuilder};
 
 /// Create a builder for a ROUTER socket.
-pub fn router(context: &ZmqContext) -> RouterBuilder {
-    RouterBuilder::new(context)
+pub fn router(context: &ZmqContext) -> SocketBuilder<RouterBuilderBound> {
+    SocketBuilder::new(context, zmq::SocketType::ROUTER)
 }
-
-impl_builder!(ROUTER, RouterBuilder, RouterBuilderBound);
 
 pub struct RouterBuilderBound {
     socket: zmq::Socket,
+}
+
+impl std::convert::From<zmq::Socket> for RouterBuilderBound {
+    fn from(socket: zmq::Socket) -> Self {
+        Self { socket }
+    }
 }
 
 impl RouterBuilderBound {

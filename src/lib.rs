@@ -9,6 +9,7 @@ pub use message::Multipart;
 
 pub use socket::SocketExt;
 pub use socket_types::*;
+pub use socket_builder::SocketBuilder;
 
 /// Crate re-exports
 pub(crate) use comm::*;
@@ -22,3 +23,4 @@ mod message;
 mod poll;
 mod socket;
 mod socket_types;
+mod socket_builder;
